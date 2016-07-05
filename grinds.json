@@ -1,0 +1,10 @@
+{
+  "grinds": {
+    "EC": "extra coarse",
+    "C": "coarse",
+    "MC": "medium-coarse",
+    "M": "medium-fine",
+    "F": "fine",
+    "EF": "extra fine"
+  }
+}
