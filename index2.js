@@ -7,8 +7,9 @@ var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt');
 var User = require('./user');
 var randtoken = require('rand-token');
+var cors = require('cors');
 
-
+app.use(cors());
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
@@ -137,6 +138,6 @@ app.get('/orders', function(request, response) {
   response.send('ok');
 });
 
-app.listen(3000, function() {
-  console.log("listening on port 3000");
+app.listen(8080, function() {
+  console.log("listening on port 8080");
 });
