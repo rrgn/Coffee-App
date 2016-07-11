@@ -98,18 +98,18 @@ app.post('/login', function(request, response) {
   });
 });
 
-app.post('/orders', function(request, response) {
-  var result = request.body;
-  var token = result.token;
-  User.findOne({ authenticationTokens: token }, function(err, user) {
-    if(!user) {
-      response.json({
-        status: "fail",
-        message: "user not logged in"
-      });
-      return;
-    }
-    user.orders.push(result.order);
+app.post('/orders', authRequired, function(request, response) {
+  // var result = request.body;
+  // var token = result.token;
+  // User.findOne({ authenticationTokens: token }, function(err, user) {
+  //   if(!user) {
+  //     response.json({
+  //       status: "fail",
+  //       message: "user not logged in"
+  //     });
+  //     return;
+  //   }
+    user.orders.push(request.body.order);
     user.save(function(err) {
       if (err) {
         response.json({
@@ -120,22 +120,38 @@ app.post('/orders', function(request, response) {
       }
       response.send('Place Order');
     });
-  });
+  // });
 });
 
-app.get('/orders', function(request, response) {
-  var result = request.body;
-  var token = request.query.token;
-  User.findOne({ authenticationTokens: token }, function(err, user) {
-    if(!user) {
-      response.json({
-        status: "fail",
-        message: "user not logged in"
-      });
+function authRequired(request, response, next) {
+  var token = request.query.token || request.body.token;
+  User.findOne({authenticationTokens: token}, function(err,user) {
+    request.user = user;
+    if (err) {
+      request.send(err.message);
       return;
     }
+    if(user) {
+      next();
+    } else {
+      response.json({message: 'please login'});
+    }
   });
-  response.send('ok');
+}
+
+app.get('/orders', authRequired, function(request, response) {
+  // var result = request.body;
+  // var token = request.query.token;
+  // User.findOne({ authenticationTokens: token }, function(err, user) {
+  //   if(!user) {
+  //     response.json({
+  //       status: "fail",
+  //       message: "user not logged in"
+  //     });
+  //     return;
+  //   }
+  // });
+  response.send('ok', request.user.orders);
 });
 
 app.listen(8080, function() {
