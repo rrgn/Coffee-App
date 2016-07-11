@@ -4,6 +4,7 @@ mongoose.connect('mongodb://localhost/Coffee-users');
 var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
+var stripe = require('stripe')('sk_test_EvFD6hRFhXazjj9XCPomjqdo');
 var bcrypt = require('bcrypt');
 var User = require('./user');
 var randtoken = require('rand-token');
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
+// get grind options
 app.get('/options', function(request, response) {
   response.json(
     [
@@ -26,7 +28,7 @@ app.get('/options', function(request, response) {
     ]
   );
 });
-
+// sign up user
 app.post('/signup', function(request, response) {
   var data = request.body;
   var userPassword = data.password;
@@ -57,6 +59,7 @@ bcrypt.hash(userPassword, 10, function(err, encryptedPassword) {
   });
 });
 
+// check user login
 app.post('/login', function(request, response) {
   var data = request.body;
   var userPassword = data.password;
@@ -98,33 +101,36 @@ app.post('/login', function(request, response) {
   });
 });
 
-app.post('/orders', authRequired, function(request, response) {
-  // var result = request.body;
-  // var token = result.token;
-  // User.findOne({ authenticationTokens: token }, function(err, user) {
-  //   if(!user) {
-  //     response.json({
-  //       status: "fail",
-  //       message: "user not logged in"
-  //     });
-  //     return;
-  //   }
-    user.orders.push(request.body.order);
+app.post('/orders', function(request, response) {
+  var result = request.body;
+  var token = result.token;
+  User.findOne({ authenticationTokens: token }, function(err, user) {
+    if(!user) {
+      response.json({
+        status: "fail",
+        message: "user not logged in"
+      });
+      return;
+    }
+    user.orders.push(result.order);
+    // console.log(result.order);
+    // console.log(request.body.order);
     user.save(function(err) {
       if (err) {
         response.json({
           status: "failed",
-          message: "Order failed" + err.message + JSON.stringify(err.errors)
+          message: "Order failed " + err.message + JSON.stringify(err.errors)
         });
         return;
       }
       response.send('Place Order');
     });
-  // });
+  });
 });
 
 function authRequired(request, response, next) {
   var token = request.query.token || request.body.token;
+  console.log(token);
   User.findOne({authenticationTokens: token}, function(err,user) {
     request.user = user;
     if (err) {
@@ -153,6 +159,30 @@ app.get('/orders', authRequired, function(request, response) {
   // });
   response.send('ok', request.user.orders);
 });
+
+// stripe payment
+app.post('/charge', function(request, response) {
+  var amount = request.body.amount;
+  var token = request.body.token;
+
+  // make the charge using the credit card associated
+  // with token
+  stripe.charges.create({
+    amount: amount,
+    currency: 'usd',
+    source: token
+  }, function(err, charge) {
+    if (err) {
+      response.json({
+        status: 'fail',
+        error: err.message
+      });
+      return;
+    }
+    response.json({ status: 'ok', charge: charge });
+  });
+});
+
 
 app.listen(8080, function() {
   console.log("listening on port 8080");
