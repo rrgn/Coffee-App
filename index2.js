@@ -164,6 +164,7 @@ app.get('/orders', authRequired, function(request, response) {
 app.post('/charge', function(request, response) {
   var amount = request.body.amount;
   var token = request.body.token;
+  console.log(token);
 
   // make the charge using the credit card associated
   // with token
